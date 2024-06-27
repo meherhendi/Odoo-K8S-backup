@@ -1,0 +1,33 @@
+FROM debian:12-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates
+
+# Import the repository signing key:
+RUN install -d /usr/share/postgresql-common/pgdg
+RUN curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+# # Create the repository configuration file:
+RUN echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    restic \
+    jq \
+    postgresql-client-16 \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY backup.sh backup.sh
+COPY backup_db.sh backup_db.sh
+COPY entrypoint.sh entrypoint.sh
+
+RUN chmod +x *.sh
+
+# Set the entrypoint to bash
+ENTRYPOINT ["./entrypoint.sh"]
+
